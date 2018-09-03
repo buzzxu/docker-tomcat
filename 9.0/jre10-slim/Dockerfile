@@ -7,6 +7,7 @@ ENV CATALINA_HOME /usr/local/tomcat
 ENV PATH $CATALINA_HOME/bin:$PATH
 RUN mkdir -p "$CATALINA_HOME"
 WORKDIR $CATALINA_HOME
+RUN apt-get update && apt-get upgrade
 
 # let "Tomcat Native" live somewhere isolated
 ENV TOMCAT_NATIVE_LIBDIR $CATALINA_HOME/native-jni-lib
@@ -72,8 +73,6 @@ ENV TOMCAT_ASC_URLS \
 RUN set -eux; \
 	\
 	savedAptMark="$(apt-mark showmanual)"; \
-	apt-get update; \
-	apt-get upgrade; \
 	\
 	apt-get install -y --no-install-recommends gnupg dirmngr; \
 	\
