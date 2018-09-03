@@ -73,6 +73,7 @@ RUN set -eux; \
 	\
 	savedAptMark="$(apt-mark showmanual)"; \
 	apt-get update; \
+	apt-get upgrade; \
 	\
 	apt-get install -y --no-install-recommends gnupg dirmngr; \
 	\
