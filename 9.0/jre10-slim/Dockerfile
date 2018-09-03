@@ -7,7 +7,7 @@ ENV CATALINA_HOME /usr/local/tomcat
 ENV PATH $CATALINA_HOME/bin:$PATH
 RUN mkdir -p "$CATALINA_HOME"
 WORKDIR $CATALINA_HOME
-RUN apt-get update && apt-get upgrade
+RUN apt-get update && apt-get upgrade -y
 
 # let "Tomcat Native" live somewhere isolated
 ENV TOMCAT_NATIVE_LIBDIR $CATALINA_HOME/native-jni-lib
