@@ -73,6 +73,7 @@ ENV TOMCAT_ASC_URLS \
 RUN set -eux; \
 	\
 	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
 	\
 	apt-get install -y --no-install-recommends gnupg dirmngr; \
 	\
