@@ -132,9 +132,8 @@ RUN set -e \
 		exit 1; \
 	fi
 
-RUN rm -rf /var/lib/apt/lists/* && \
-    rm -rf /tmp/* && \
-    apt-get clean 
+RUN rm -rf /var/cache/apk/* && \
+    rm -rf /tmp/*
 
 EXPOSE 8080
 CMD ["catalina.sh", "run"]
