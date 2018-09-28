@@ -1,51 +1,15 @@
-FROM buzzxu/java:10-jre-slim
+FROM buzzxu/java:11
 
 MAINTAINER buzzxu <downloadxu@163.com>
-
 
 ENV CATALINA_HOME /usr/local/tomcat
 ENV PATH $CATALINA_HOME/bin:$PATH
 RUN mkdir -p "$CATALINA_HOME"
 WORKDIR $CATALINA_HOME
-RUN apt-get update && apt-get upgrade -y
 
 # let "Tomcat Native" live somewhere isolated
 ENV TOMCAT_NATIVE_LIBDIR $CATALINA_HOME/native-jni-lib
 ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$TOMCAT_NATIVE_LIBDIR
-
-# runtime dependencies for Tomcat Native Libraries
-# Tomcat Native 1.2+ requires a newer version of OpenSSL than debian:jessie has available
-# > checking OpenSSL library version >= 1.0.2...
-# > configure: error: Your version of OpenSSL is not compatible with this version of tcnative
-# see http://tomcat.10.x6.nabble.com/VOTE-Release-Apache-Tomcat-8-0-32-tp5046007p5046024.html (and following discussion)
-# and https://github.com/docker-library/tomcat/pull/31
-ENV OPENSSL_VERSION 1.1.0f-3+deb9u2
-RUN if ! grep -q stretch /etc/apt/sources.list; then \
-# only add stretch if we're not already building from within stretch
-			{ \
-				echo 'deb http://deb.debian.org/debian stretch main'; \
-				echo 'deb http://security.debian.org stretch/updates main'; \
-				echo 'deb http://deb.debian.org/debian stretch-updates main'; \
-			} > /etc/apt/sources.list.d/stretch.list; \
-			{ \
-# add a negative "Pin-Priority" so that we never ever get packages from stretch unless we explicitly request them
-				echo 'Package: *'; \
-				echo 'Pin: release n=stretch*'; \
-				echo 'Pin-Priority: -10'; \
-				echo; \
-# ... except OpenSSL, which is the reason we're here
-				echo 'Package: openssl libssl*'; \
-				echo "Pin: version $OPENSSL_VERSION"; \
-				echo 'Pin-Priority: 990'; \
-			} > /etc/apt/preferences.d/stretch-openssl; \
-		fi; \
-		apt-get update; \
-		apt-get install -y --no-install-recommends openssl="$OPENSSL_VERSION"; \
-		rm -rf /var/lib/apt/lists/*; 
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-		libapr1 \
-	&& rm -rf /var/lib/apt/lists/*
 
 # see https://www.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/KEYS
 # see also "update.sh" (https://github.com/docker-library/tomcat/blob/master/update.sh)
@@ -70,19 +34,21 @@ ENV TOMCAT_ASC_URLS \
 	https://www.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz.asc \
 	https://archive.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz.asc
 
+RUN apk update && apk upgrade
+
 RUN set -eux; \
 	\
-	savedAptMark="$(apt-mark showmanual)"; \
-	apt-get update; \
-	\
-	apt-get install -y --no-install-recommends gnupg dirmngr; \
+	apk add --no-cache --virtual .fetch-deps \
+		gnupg \
+		\
+		ca-certificates \
+		openssl \
+	; \
 	\
 	export GNUPGHOME="$(mktemp -d)"; \
 	for key in $GPG_KEYS; do \
 		gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
 	done; \
-	\
-	apt-get install -y --no-install-recommends wget ca-certificates; \
 	\
 	success=; \
 	for url in $TOMCAT_TGZ_URLS; do \
@@ -113,12 +79,14 @@ RUN set -eux; \
 	\
 	nativeBuildDir="$(mktemp -d)"; \
 	tar -xvf bin/tomcat-native.tar.gz -C "$nativeBuildDir" --strip-components=1; \
-	apt-get install -y --no-install-recommends \
-		dpkg-dev \
+	apk add --no-cache --virtual .native-build-deps \
+		apr-dev \
+		coreutils \
+		dpkg-dev dpkg \
 		gcc \
-		libapr1-dev \
-		libssl-dev \
+		libc-dev \
 		make \
+		openssl-dev \
 	; \
 	( \
 		export CATALINA_HOME="$PWD"; \
@@ -137,15 +105,19 @@ RUN set -eux; \
 	rm -rf "$nativeBuildDir"; \
 	rm bin/tomcat-native.tar.gz; \
 	\
-# reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
-	apt-mark auto '.*' > /dev/null; \
-	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
-	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
-	rm -rf /var/lib/apt/lists/*; \
+	runDeps="$( \
+		scanelf --needed --nobanner --format '%n#p' --recursive "$TOMCAT_NATIVE_LIBDIR" \
+			| tr ',' '\n' \
+			| sort -u \
+			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+	)"; \
+	apk add --virtual .tomcat-native-rundeps $runDeps; \
+	apk del .fetch-deps .native-build-deps; \
 	\
 # sh removes env vars it doesn't support (ones with periods)
 # https://github.com/docker-library/tomcat/issues/77
-	find ./bin/ -name '*.sh' -exec sed -ri 's|^#!/bin/bash$|#!/usr/bin/env bash|' '{}' +
+	apk add --no-cache bash; \
+	find ./bin/ -name '*.sh' -exec sed -ri 's|^#!/bin/sh$|#!/usr/bin/env bash|' '{}' +
 
 # verify Tomcat Native is working properly
 RUN set -e \
