@@ -122,6 +122,9 @@ RUN set -eux; \
 	chmod -R +rX .; \
 	chmod 777 logs work
 
+RUN rm -rf /var/cache/apk/* && \
+    rm -rf /tmp/*
+	
 # verify Tomcat Native is working properly
 RUN set -e \
 	&& nativeLines="$(catalina.sh configtest 2>&1)" \
@@ -132,8 +135,7 @@ RUN set -e \
 		exit 1; \
 	fi
 
-RUN rm -rf /var/cache/apk/* && \
-    rm -rf /tmp/*
+
 
 EXPOSE 8080
 CMD ["catalina.sh", "run"]
