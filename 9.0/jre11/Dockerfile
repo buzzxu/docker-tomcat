@@ -19,7 +19,6 @@ ENV TOMCAT_MAJOR 9
 ENV TOMCAT_VERSION 9.0.14
 ENV TOMCAT_SHA512 6a06eabacb02eaa2c64772265f8ddb5ddbfbad72b4c5da82e68da739675c3ec7e4692ebb8aa80e1b5512006f60856c939c7c3a5fe4f46f30bd4b575ecd068d54
 
-
 ENV TOMCAT_TGZ_URLS \
 # https://issues.apache.org/jira/browse/INFRA-8753?focusedCommentId=14735394#comment-14735394
 	https://www.apache.org/dyn/closer.cgi?action=download&filename=tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz \
@@ -34,6 +33,7 @@ ENV TOMCAT_ASC_URLS \
 	https://www-us.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz.asc \
 	https://www.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz.asc \
 	https://archive.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz.asc
+
 
 RUN set -eux; \
 	\
@@ -122,9 +122,6 @@ RUN set -eux; \
 # https://github.com/docker-library/tomcat/issues/35
 	chmod -R +rX .; \
 	chmod 777 logs work
-
-RUN rm -rf /var/cache/apk/* && \
-    rm -rf /tmp/*
 	
 # verify Tomcat Native is working properly
 RUN set -e \
