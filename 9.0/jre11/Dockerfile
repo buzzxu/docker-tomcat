@@ -1,6 +1,4 @@
-FROM buzzxu/java:11
-
-MAINTAINER buzzxu <downloadxu@163.com>
+FROM azul/zulu-openjdk-alpine:11 AS tomcat
 
 ENV CATALINA_HOME /usr/local/tomcat
 ENV PATH $CATALINA_HOME/bin:$PATH
@@ -111,18 +109,31 @@ RUN set -eux; \
 			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
 	)"; \
 	apk add --virtual .tomcat-native-rundeps $runDeps; \
-	apk del .fetch-deps .native-build-deps; \
-	\
-# sh removes env vars it doesn't support (ones with periods)
-# https://github.com/docker-library/tomcat/issues/77
-	apk add --no-cache bash; \
-	find ./bin/ -name '*.sh' -exec sed -ri 's|^#!/bin/sh$|#!/usr/bin/env bash|' '{}' +; \
-	\
-# fix permissions (especially for running as non-root)
-# https://github.com/docker-library/tomcat/issues/35
-	chmod -R +rX .; \
-	chmod 777 logs work
+	apk del .fetch-deps .native-build-deps;
 	
+
+FROM buzzxu/java:11-zulu
+
+LABEL MAINTAINER buzzxu <downloadxu@163.com>
+
+ENV CATALINA_HOME /usr/local/tomcat
+ENV PATH $CATALINA_HOME/bin:$PATH
+# let "Tomcat Native" live somewhere isolated
+ENV TOMCAT_NATIVE_LIBDIR $CATALINA_HOME/native-jni-lib
+ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$TOMCAT_NATIVE_LIBDIR
+
+COPY --from=tomcat $CATALINA_HOME $CATALINA_HOME
+
+WORKDIR $CATALINA_HOME
+
+RUN apk update && apk upgrade ; \
+	apk add --no-cache -U openssl bash ; \
+	find ./bin/ -name '*.sh' -exec sed -ri 's|^#!/bin/sh$|#!/usr/bin/env bash|' '{}' +; \
+	chmod -R +rX .; \
+	chmod 777 logs work ; \
+	rm -rf /var/cache/apk/* ; \
+    rm -rf /tmp/* 
+
 # verify Tomcat Native is working properly
 RUN set -e \
 	&& nativeLines="$(catalina.sh configtest 2>&1)" \
@@ -132,8 +143,6 @@ RUN set -e \
 		echo >&2 "$nativeLines"; \
 		exit 1; \
 	fi
-
-
 
 EXPOSE 8080
 CMD ["catalina.sh", "run"]
