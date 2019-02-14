@@ -127,7 +127,7 @@ COPY --from=tomcat $CATALINA_HOME $CATALINA_HOME
 WORKDIR $CATALINA_HOME
 
 RUN apk update && apk upgrade ; \
-	apk add --no-cache -U openssl bash ; \
+	apk add --no-cache -U openssl bash apr; \
 	find ./bin/ -name '*.sh' -exec sed -ri 's|^#!/bin/sh$|#!/usr/bin/env bash|' '{}' +; \
 	chmod -R +rX .; \
 	chmod 777 logs work ; \
@@ -135,4 +135,4 @@ RUN apk update && apk upgrade ; \
     rm -rf /tmp/* 
 
 EXPOSE 8080
-#CMD ["catalina.sh", "run"]
+CMD ["catalina.sh", "run"]
