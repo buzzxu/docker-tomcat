@@ -15,7 +15,7 @@ COPY --from=tomcat $CATALINA_HOME $CATALINA_HOME
 WORKDIR $CATALINA_HOME
 
 RUN apk update && apk upgrade ; \
-	apk add --no-cache -U libressl-dev bash apr apr-dev; \
+	apk add --no-cache -U apr-dev openssl-dev bash apr; \
 	find ./bin/ -name '*.sh' -exec sed -ri 's|^#!/bin/sh$|#!/usr/bin/env bash|' '{}' +; \
 	chmod -R +rX .; \
 	chmod 777 logs work ; \
