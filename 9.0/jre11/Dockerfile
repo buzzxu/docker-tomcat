@@ -14,14 +14,13 @@ COPY --from=tomcat $CATALINA_HOME $CATALINA_HOME
 
 WORKDIR $CATALINA_HOME
 
-RUN apk update && apk upgrade ; \
-	apk add --no-cache -U apr-dev coreutils gcc bash libressl libressl-dev; \
-	find ./bin/ -name '*.sh' -exec sed -ri 's|^#!/bin/sh$|#!/usr/bin/env bash|' '{}' +; \
-	chmod -R +rX .; \
-	chmod 777 logs work ; \
-	rm -rf /var/cache/apk/* ; \
-    rm -rf /tmp/* 
-
+RUN apt-get update -qq && \ 
+    apt-get upgrade -y && \
+    apt-get install -qq -y --no-install-recommends libapr1 && \
+    chmod -R +rX . && \
+    chmod 777 logs work && \
+    rm -rf /var/lib/apt/lists/*; 
+    
 # verify Tomcat Native is working properly
 RUN set -e \
 	&& nativeLines="$(catalina.sh configtest 2>&1)" \
@@ -31,6 +30,6 @@ RUN set -e \
 		echo >&2 "$nativeLines"; \
 		exit 1; \
 	fi
-	
+
 EXPOSE 8080
 CMD ["catalina.sh", "run"]

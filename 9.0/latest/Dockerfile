@@ -1,6 +1,6 @@
-FROM tomcat:9-jre11-slim AS tomcat
+FROM tomcat:9-jdk13-openjdk-oracle AS tomcat
 
-FROM buzzxu/java:11-slim
+FROM buzzxu/java:latest
 
 LABEL MAINTAINER buzzxu <downloadxu@163.com>
 
