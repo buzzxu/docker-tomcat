@@ -1,4 +1,4 @@
-FROM tomcat:9-jdk11-corretto AS tomcat
+FROM tomcat:9-jdk11-openjdk-slim AS tomcat
 
 FROM buzzxu/java:11
 
