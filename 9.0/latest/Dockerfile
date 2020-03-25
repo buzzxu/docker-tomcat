@@ -1,4 +1,4 @@
-FROM tomcat:9-jdk13-openjdk-oracle AS tomcat
+FROM tomcat:9-jdk14-openjdk-slim-buster AS tomcat
 
 FROM buzzxu/java:latest
 
