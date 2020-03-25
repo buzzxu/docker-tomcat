@@ -16,7 +16,7 @@ WORKDIR $CATALINA_HOME
 
 RUN apt-get update -qq && \ 
     apt-get upgrade -y && \
-    apt-get install -qq -y --no-install-recommends libapr1 apt-utils && \
+    apt-get install -qq -y --no-install-recommends libtcnative-1 libapr1 apt-utils && \
     chmod -R +rX . && \
     chmod 777 logs work && \
     rm -rf /var/lib/apt/lists/*; 
